@@ -14,7 +14,8 @@ jobs:
     env:
       NO_TORCH_COMPILE: 1
       PYTORCH_ENABLE_MPS_FALLBACK: 1
-
+      PYTORCH_MPS_HIGH_WATERMARK_RATIO: 0.0
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
