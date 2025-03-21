@@ -63,11 +63,14 @@ jobs:
           login(token='$HUGGINGFACE_TOKEN')
           print('✅ Logged in to Hugging Face')
           "
+          
+      - name: Install memory profiler
+        run: pip install memory-profiler
 
       - name: Run model test
         run: |
           source .venv/bin/activate
-          python run_csm.py
+          python -m memory_profiler run_csm.py
 
       - name: Upload generated audio
         if: always()
