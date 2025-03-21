@@ -1,0 +1,81 @@
+name: Test CSM Model on macOS
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-csm:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      NO_TORCH_COMPILE: 1
+      PYTORCH_ENABLE_MPS_FALLBACK: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Debug environment
+        run: |
+          echo "Python version:"
+          python3 --version
+          which python3
+          sw_vers
+          uname -m
+          echo "Directory contents:"
+          ls -la
+
+      - name: Install system dependencies
+        run: |
+          brew update
+          brew install ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install huggingface_hub
+
+      - name: Verify Hugging Face CLI
+        run: |
+          source .venv/bin/activate
+          python -c "import huggingface_hub; print(huggingface_hub.__version__)"
+
+      - name: Login to Hugging Face
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+        run: |
+          source .venv/bin/activate
+          python -c "
+          from huggingface_hub import login
+          login(token='$HUGGINGFACE_TOKEN')
+          print('✅ Logged in to Hugging Face')
+          "
+
+      - name: Run model test
+        run: |
+          source .venv/bin/activate
+          python run_csm.py
+
+      - name: Upload generated audio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-audio
+          path: test_output.wav
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf .venv
