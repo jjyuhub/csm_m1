@@ -5,7 +5,11 @@ from huggingface_hub import hf_hub_download
 from generator import load_csm_1b, Segment
 from dataclasses import dataclass
 
-# Disable Triton compilation
+# Disable Triton on macOS
+if sys.platform == "darwin":
+    import types
+    sys.modules["triton"] = types.SimpleNamespace()
+    
 os.environ["NO_TORCH_COMPILE"] = "1"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 # Default prompts are available at https://hf.co/sesame/csm-1b
