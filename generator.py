@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Tuple
+import platform
 
 import torch
 import torchaudio
@@ -163,9 +164,24 @@ class Generator:
         return audio
 
 
-def load_csm_1b(device: str = "cuda") -> Generator:
-    model = Model.from_pretrained("sesame/csm-1b")
-    model.to(device=device, dtype=torch.float32)
+def load_csm_1b(device: str = None) -> Generator:
+    if device is None:
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
 
-    generator = Generator(model)
-    return generator
+    # Adjust dtype based on device
+    if device == "cuda":
+        dtype = torch.bfloat16
+    elif device == "mps":
+        dtype = torch.float16  # bfloat16 not supported
+    else:
+        dtype = torch.float32
+
+    model = Model.from_pretrained("sesame/csm-1b")
+    model.to(device=device, dtype=dtype)
+
+    return Generator(model)
